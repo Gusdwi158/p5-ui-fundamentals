@@ -161,9 +161,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  // ==========================================
-                  // 2. SUMMARY ROW (Reusable Widget)
-                  // ==========================================
                   Row(
                     children: [
                       buildSummaryCard(
