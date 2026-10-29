@@ -1,7 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 const String studentName = 'I Kadek Agus Dwi Adnyana';
 const String studentId = '2415051076';
+
+// Membaca file JSON tanpa kurung siku generic
+Future loadStudentData() async {
+  final jsonString = await rootBundle.loadString(
+    'assets/data/student_data.json',
+  );
+  return jsonDecode(jsonString);
+}
 
 void main() {
   runApp(const MyApp());
@@ -13,144 +24,247 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tahap 4 - Expanded, Flexible, Wrap',
+      title: 'Tahap 5 - GridView Responsif',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const FlexWrapDemoPage(),
+      home: const ResponsiveGridPage(),
     );
   }
 }
 
-class FlexWrapDemoPage extends StatelessWidget {
-  const FlexWrapDemoPage({super.key});
+class ResponsiveGridPage extends StatefulWidget {
+  const ResponsiveGridPage({super.key});
 
-  final List<String> skills = const [
-    'Flutter',
-    'Dart',
-    'UI Design',
-    'Git & GitHub',
-    'REST API',
-    'State Management',
-  ];
+  @override
+  State<ResponsiveGridPage> createState() => _ResponsiveGridPageState();
+}
 
-  Widget buildBox(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      ),
-    );
+class _ResponsiveGridPageState extends State<ResponsiveGridPage> {
+  late Future dataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    dataFuture = loadStudentData();
+  }
+
+  int columnsFor(double width) {
+    if (width < 600) return 1;
+    if (width < 840) return 2;
+    return 3;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tahap 4: Expanded, Flexible, Wrap'),
+        title: const Text('Tahap 5: GridView Responsif'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Identitas Mahasiswa
-              Text(
-                '$studentId - $studentName',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
-              ),
-              const Divider(height: 24),
+        child: FutureBuilder(
+          future: dataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              // Bagian 1: Dua panel Expanded dengan flex 2:1
-              const Text(
-                '1. Dua Panel Row dengan Expanded (Flex 2 : 1)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Gagal memuat JSON: ${snapshot.error}'),
+              );
+            }
+
+            final data = snapshot.data as Map;
+            final List courses = data['courses'] as List;
+
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: buildBox(
-                      'Panel A (Flex 2 - 66.7%)',
-                      Colors.blue.shade100,
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 12.0,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.school, color: Colors.blue, size: 36),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  studentName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  'NIM: $studentId | PTI 5 A',
+                                  style: TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 16),
                   Expanded(
-                    flex: 1,
-                    child: buildBox(
-                      'Panel B (Flex 1 - 33.3%)',
-                      Colors.orange.shade100,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final int cols = columnsFor(constraints.maxWidth);
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Daftar Course ($cols Kolom | Width: ${constraints.maxWidth.toStringAsFixed(0)} px)',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: GridView.builder(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: cols,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      childAspectRatio: cols == 1 ? 2.8 : 1.8,
+                                    ),
+                                itemCount: courses.length,
+                                itemBuilder: (context, index) {
+                                  return CourseCard(
+                                    course: courses[index] as Map,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
-              // Bagian 2: Minimal 6 Chip Skill menggunakan Wrap
-              const Text(
-                '2. Daftar Skill Menggunakan Wrap (Multi-line adaptif)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: skills
-                    .map(
-                      (e) => Chip(
-                        avatar: const CircleAvatar(
-                          child: Icon(Icons.check, size: 14),
-                        ),
-                        label: Text(e),
-                        backgroundColor: Colors.green.shade50,
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 24),
+class CourseCard extends StatelessWidget {
+  final Map course;
+  const CourseCard({super.key, required this.course});
 
-              // Bagian 3: Komparasi jika menggunakan Row biasa (Beresiko Overflow)
-              const Text(
-                '3. Perbandingan: Chip dalam SingleChildScrollView Row',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: skills
-                      .map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Chip(
-                            label: Text(e),
-                            backgroundColor: Colors.grey.shade200,
-                          ),
-                        ),
-                      )
-                      .toList(),
+  @override
+  Widget build(BuildContext context) {
+    final String status = (course['status'] ?? 'planned').toString();
+    final bool isDone = status == 'done';
+    final bool isActive = status == 'active';
+
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+
+    if (isDone) {
+      statusColor = Colors.green;
+      statusText = 'Selesai';
+      statusIcon = Icons.check_circle;
+    } else if (isActive) {
+      statusColor = Colors.blue;
+      statusText = 'Berjalan';
+      statusIcon = Icons.play_circle_fill;
+    } else {
+      statusColor = Colors.orange;
+      statusText = 'Rencana';
+      statusIcon = Icons.schedule;
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(statusIcon, color: statusColor, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    course['title']?.toString() ?? 'No Title',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+            Text(
+              '${course['code']} • ${course['credits']} SKS',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    course['lecturer']?.toString() ?? '',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
