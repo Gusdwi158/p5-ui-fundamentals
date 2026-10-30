@@ -13,95 +13,44 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tahap 14 - Feedback UI',
+      title: 'Tahap 16 - Debugging Challenge',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const FeedbackDialogPage(),
+      home: const DebuggingChallengePage(),
     );
   }
 }
 
-class FeedbackDialogPage extends StatefulWidget {
-  const FeedbackDialogPage({super.key});
+class DebuggingChallengePage extends StatefulWidget {
+  const DebuggingChallengePage({super.key});
 
   @override
-  State<FeedbackDialogPage> createState() => _FeedbackDialogPageState();
+  State<DebuggingChallengePage> createState() => _DebuggingChallengePageState();
 }
 
-class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController commentController = TextEditingController();
+class _DebuggingChallengePageState extends State<DebuggingChallengePage> {
+  // Kasus D: Flag boolean debouncing untuk mencegah navigasi ganda
+  bool isNavigating = false;
 
-  // Poin 57: State untuk simulasi loading singkat
-  bool isLoading = false;
-
-  @override
-  void dispose() {
-    commentController.dispose();
-    super.dispose();
-  }
-
-  // Fungsi simulasi proses pengiriman data dengan delay
-  Future processSubmission() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    // Simulasi jaringan/proses selama 2 detik
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
+  void openDetailSafely() async {
+    if (isNavigating) return; // Abaikan klik berulang yang cepat
 
     setState(() {
-      isLoading = false;
-      commentController.clear();
+      isNavigating = true;
     });
 
-    // Poin 55: Tampilkan SnackBar setelah form valid & proses selesai
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 10),
-            Text('Feedback berhasil disimpan ke server!'),
-          ],
-        ),
-        backgroundColor: Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DummyDetailPage()),
     );
-  }
 
-  // Poin 56: AlertDialog sebelum aksi penting (submit data)
-  void confirmSubmission() {
-    if (formKey.currentState!.validate()) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Konfirmasi Pengiriman'),
-          content: Text(
-            'Apakah Anda yakin ingin mengirim komentar:\n"${commentController.text}"?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx); // Tutup dialog
-                processSubmission(); // Jalankan simulasi loading
-              },
-              child: const Text('Ya, Kirim'),
-            ),
-          ],
-        ),
-      );
+    if (mounted) {
+      setState(() {
+        isNavigating = false;
+      });
     }
   }
 
@@ -109,13 +58,14 @@ class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tahap 14: SnackBar & Dialog'),
+        title: const Text('Tahap 16: Debugging Challenge'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         centerTitle: true,
       ),
+      // Kasus C Solusi: SingleChildScrollView mencegah keyboard overflow pada layar bawah
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -126,15 +76,11 @@ class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(14.0),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.feedback_outlined,
-                        color: Colors.blue,
-                        size: 36,
-                      ),
-                      SizedBox(width: 14),
+                      Icon(Icons.bug_report, color: Colors.teal, size: 36),
+                      SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -148,8 +94,9 @@ class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
                           Text(
                             'NIM: $studentId | PTI 5 A',
                             style: TextStyle(
-                              color: Colors.blueAccent,
+                              color: Colors.teal,
                               fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -158,81 +105,177 @@ class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Formulir Input
+              // ==========================================
+              // KASUS A: Perbaikan RenderFlex Overflow pada Row
+              // Solusi: Membungkus Text dengan Expanded agar teks membungkus (wrap)
+              // ==========================================
               Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                elevation: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Kirim Umpan Balik',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kasus A: Perbaikan Row Teks Panjang',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
                         ),
-                        const SizedBox(height: 14),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.info, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          // Solusi Kasus A: Menggunakan Expanded
+                          Expanded(
+                            child: Text(
+                              '$studentId - $studentName - Teks deskripsi sangat panjang ini berhasil dibungkus rapi ke baris berikutnya tanpa menyebabkan RenderFlex overflow horizontal pada layar.',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
 
-                        TextFormField(
-                          controller: commentController,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Isi Feedback',
-                            hintText: 'Tuliskan masukan minimal 5 karakter...',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.edit_note),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Feedback tidak boleh kosong';
-                            }
-                            if (value.trim().length < 5) {
-                              return 'Minimal 5 karakter';
-                            }
-                            return null;
-                          },
+              // ==========================================
+              // KASUS B: Perbaikan ListView di dalam Column
+              // Solusi: Gunakan shrinkWrap: true & physics: NeverScrollableScrollPhysics
+              // ==========================================
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kasus B: ListView di dalam Column',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
                         ),
-                        const SizedBox(height: 20),
+                      ),
+                      const SizedBox(height: 8),
+                      // Solusi Kasus B: shrinkWrap: true mencegah vertical unbounded height
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: 2,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            ),
+                            title: Text('Course Praktikum Item #${index + 1}'),
+                            subtitle: const Text(
+                              'Rendered safely without unbounded height',
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
 
-                        // Tombol dengan Indikator Loading
-                        ElevatedButton(
-                          onPressed: isLoading ? null : confirmSubmission,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.send),
-                                    SizedBox(width: 8),
-                                    Text('Kirim dengan Konfirmasi'),
-                                  ],
-                                ),
+              // ==========================================
+              // KASUS D: Mencegah Navigasi Ganda (Debounce / Flag)
+              // ==========================================
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kasus D: Pencegahan Navigasi Ganda',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: isNavigating ? null : openDetailSafely,
+                        icon: const Icon(Icons.open_in_new),
+                        label: Text(
+                          isNavigating
+                              ? 'Membuka Layar...'
+                              : 'Buka Detail (Aman dari Multi-Push)',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // ==========================================
+              // KASUS C: Form Input dekat bagian bawah layar
+              // ==========================================
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kasus C: Keyboard Overflow Test Field',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Input di bagian bawah layar',
+                          hintText:
+                              'Klik untuk memunculkan keyboard virtual...',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.keyboard),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Layar Dummy untuk Uji Navigasi Kasus D
+class DummyDetailPage extends StatelessWidget {
+  const DummyDetailPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Detail Screen (Single Route)')),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text(
+            'Halaman hanya terbuka tepat 1 kali di atas Navigation Stack berkat pengamanan flag isNavigating.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
           ),
         ),
       ),
