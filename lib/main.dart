@@ -13,28 +13,27 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tahap 10 - NavigationBar',
+      title: 'Tahap 11 - Adaptive Navigation',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const MainNavigationPage(),
+      home: const AdaptiveShellPage(),
     );
   }
 }
 
-class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({super.key});
+class AdaptiveShellPage extends StatefulWidget {
+  const AdaptiveShellPage({super.key});
 
   @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
+  State<AdaptiveShellPage> createState() => _AdaptiveShellPageState();
 }
 
-class _MainNavigationPageState extends State<MainNavigationPage> {
-  // I KADEK AGUS DWI ADNYANA
-  // 2415051076
-  int currentIndex = 0;
+class _AdaptiveShellPageState extends State<AdaptiveShellPage> {
+  // Poin 46: selectedIndex tetap terjaga saat resize layar
+  int selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -44,40 +43,100 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       const ProfileTab(),
     ];
 
-    return Scaffold(
-      body: SafeArea(child: pages[currentIndex]),
+    // Poin 43: LayoutBuilder pada shell aplikasi
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Poin 44: Compact/Medium (< 840px) menggunakan NavigationBar
+        if (constraints.maxWidth < 840) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(
+                'Adaptive Nav: Compact/Medium (${constraints.maxWidth.toStringAsFixed(0)}px)',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              centerTitle: true,
+            ),
+            body: SafeArea(child: pages[selectedIndex]),
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (int index) {
+                setState(() {
+                  selectedIndex = index;
+                });
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.school_outlined),
+                  selectedIcon: Icon(Icons.school),
+                  label: 'Courses',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+            ),
+          );
+        }
 
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+        // Poin 45: Expanded (>= 840px) menggunakan NavigationRail
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Adaptive Nav: Expanded Screen (${constraints.maxWidth.toStringAsFixed(0)}px)',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school),
-            label: 'Courses',
+          body: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (int index) {
+                  setState(() {
+                    selectedIndex = index;
+                  });
+                },
+                labelType: NavigationRailLabelType.all,
+                leading: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12.0),
+                  child: Icon(Icons.devices, size: 32, color: Colors.blue),
+                ),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home),
+                    label: Text('Home'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.school_outlined),
+                    selectedIcon: Icon(Icons.school),
+                    label: Text('Courses'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.person_outline),
+                    selectedIcon: Icon(Icons.person),
+                    label: Text('Profile'),
+                  ),
+                ],
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(child: SafeArea(child: pages[selectedIndex])),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 // ==========================================
-// 1. HOME TAB (Menampilkan Identitas Mahasiswa)
+// 1. HOME TAB (Identitas Mahasiswa)
 // ==========================================
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
@@ -85,26 +144,20 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Dashboard Utama',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          // Identitas Mahasiswa pada Home Screen
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Padding(
               padding: EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  Icon(Icons.dashboard_customize, color: Colors.blue, size: 40),
+                  Icon(Icons.person_pin, size: 44, color: Colors.blue),
                   SizedBox(width: 14),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,10 +186,10 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 20),
           const Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(18.0),
               child: Text(
-                'Selamat datang di aplikasi pembelajaran mobile! Gunakan bilah navigasi di bawah untuk menjelajahi daftar kursus dan informasi profil.',
-                style: TextStyle(fontSize: 14, height: 1.4),
+                'Uji perubahan navigasi secara responsif dengan memperbesar atau memperkecil ukuran jendela browser/emulator melewati batas 840px.',
+                style: TextStyle(fontSize: 14, height: 1.5),
               ),
             ),
           ),
@@ -162,7 +215,7 @@ class CoursesTab extends StatelessWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -182,7 +235,6 @@ class CoursesTab extends StatelessWidget {
                     leading: CircleAvatar(child: Text('${index + 1}')),
                     title: Text(c['title'].toString()),
                     subtitle: Text('${c['code']} • ${c['sks']} SKS'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                   ),
                 );
               },
@@ -195,7 +247,7 @@ class CoursesTab extends StatelessWidget {
 }
 
 // ==========================================
-// 3. PROFILE TAB (Menampilkan Identitas Mahasiswa)
+// 3. PROFILE TAB
 // ==========================================
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -215,7 +267,10 @@ class ProfileTab extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(radius: 36, child: Icon(Icons.person, size: 40)),
+                CircleAvatar(
+                  radius: 36,
+                  child: Icon(Icons.account_circle, size: 48),
+                ),
                 SizedBox(height: 16),
                 Text(
                   studentName,
@@ -227,13 +282,8 @@ class ProfileTab extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: Colors.blueAccent),
                 ),
                 Text(
-                  'Pendidikan Teknik Informatika (Undiksha)',
+                  'Pendidikan Teknik Informatika - Undiksha',
                   style: TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-                Divider(height: 32),
-                Text(
-                  'Navigasi Destinasi Utama Aktif',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
