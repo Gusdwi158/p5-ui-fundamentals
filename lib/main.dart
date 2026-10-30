@@ -13,78 +13,91 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tahap 13 - Form & Validasi',
+      title: 'Tahap 14 - Feedback UI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const FeedbackFormPage(),
+      home: const FeedbackDialogPage(),
     );
   }
 }
 
-class FeedbackFormPage extends StatefulWidget {
-  const FeedbackFormPage({super.key});
+class FeedbackDialogPage extends StatefulWidget {
+  const FeedbackDialogPage({super.key});
 
   @override
-  State<FeedbackFormPage> createState() => _FeedbackFormPageState();
+  State<FeedbackDialogPage> createState() => _FeedbackDialogPageState();
 }
 
-class _FeedbackFormPageState extends State<FeedbackFormPage> {
-  // GlobalKey untuk mengontrol status validasi Form
+class _FeedbackDialogPageState extends State<FeedbackDialogPage> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
-  // Controller dengan nilai default dari konstanta identitas (Poin 51 & 52)
-  late final TextEditingController nameController;
-  late final TextEditingController idController;
   final TextEditingController commentController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController(text: studentName);
-    idController = TextEditingController(text: studentId);
-  }
+  // Poin 57: State untuk simulasi loading singkat
+  bool isLoading = false;
 
   @override
   void dispose() {
-    nameController.dispose();
-    idController.dispose();
     commentController.dispose();
     super.dispose();
   }
 
-  // Poin 54: Validasi form sebelum menampilkan hasil
-  void submitForm() {
+  // Fungsi simulasi proses pengiriman data dengan delay
+  Future processSubmission() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    // Simulasi jaringan/proses selama 2 detik
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+      commentController.clear();
+    });
+
+    // Poin 55: Tampilkan SnackBar setelah form valid & proses selesai
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 10),
+            Text('Feedback berhasil disimpan ke server!'),
+          ],
+        ),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Poin 56: AlertDialog sebelum aksi penting (submit data)
+  void confirmSubmission() {
     if (formKey.currentState!.validate()) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
-          title: const Text('Validasi Berhasil!'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Nama: ${nameController.text}'),
-              const SizedBox(height: 4),
-              Text('NIM: ${idController.text}'),
-              const SizedBox(height: 8),
-              const Text(
-                'Komentar / Feedback:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(commentController.text),
-            ],
+          title: const Text('Konfirmasi Pengiriman'),
+          content: Text(
+            'Apakah Anda yakin ingin mengirim komentar:\n"${commentController.text}"?',
           ),
           actions: [
             TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
               onPressed: () {
-                Navigator.pop(ctx);
-                commentController.clear();
+                Navigator.pop(ctx); // Tutup dialog
+                processSubmission(); // Jalankan simulasi loading
               },
-              child: const Text('OK'),
+              child: const Text('Ya, Kirim'),
             ),
           ],
         ),
@@ -96,7 +109,7 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tahap 13: Form Input & Validasi'),
+        title: const Text('Tahap 14: SnackBar & Dialog'),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         centerTitle: true,
       ),
@@ -117,7 +130,7 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.assignment_turned_in,
+                        Icons.feedback_outlined,
                         color: Colors.blue,
                         size: 36,
                       ),
@@ -147,7 +160,7 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Formulir Feedback
+              // Formulir Input
               Card(
                 elevation: 3,
                 shape: RoundedRectangleBorder(
@@ -161,80 +174,58 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text(
-                          'Form Feedback Mahasiswa',
+                          'Kirim Umpan Balik',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // Field 1: Nama Mahasiswa
-                        TextFormField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Mahasiswa',
-                            prefixIcon: Icon(Icons.person),
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Nama wajib diisi';
-                            }
-                            return null;
-                          },
-                        ),
                         const SizedBox(height: 14),
 
-                        // Field 2: NIM Mahasiswa
-                        TextFormField(
-                          controller: idController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'NIM Mahasiswa',
-                            prefixIcon: Icon(Icons.badge),
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'NIM wajib diisi';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Field 3: Komentar (Poin 53: Minimal 5 karakter)
                         TextFormField(
                           controller: commentController,
                           maxLines: 3,
                           decoration: const InputDecoration(
-                            labelText: 'Komentar / Feedback',
+                            labelText: 'Isi Feedback',
                             hintText: 'Tuliskan masukan minimal 5 karakter...',
-                            prefixIcon: Icon(Icons.comment),
                             border: OutlineInputBorder(),
-                            alignLabelWithHint: true,
+                            prefixIcon: Icon(Icons.edit_note),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Komentar wajib diisi';
+                              return 'Feedback tidak boleh kosong';
                             }
                             if (value.trim().length < 5) {
-                              return 'Komentar wajib minimal 5 karakter';
+                              return 'Minimal 5 karakter';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
 
-                        // Tombol Submit
-                        ElevatedButton.icon(
-                          onPressed: submitForm,
-                          icon: const Icon(Icons.send),
-                          label: const Text('Kirim Feedback'),
+                        // Tombol dengan Indikator Loading
+                        ElevatedButton(
+                          onPressed: isLoading ? null : confirmSubmission,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.send),
+                                    SizedBox(width: 8),
+                                    Text('Kirim dengan Konfirmasi'),
+                                  ],
+                                ),
                         ),
                       ],
                     ),
